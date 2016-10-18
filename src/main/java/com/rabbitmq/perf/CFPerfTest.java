@@ -2,9 +2,7 @@ package com.rabbitmq.perf;
 
 import com.rabbitmq.tools.json.JSONReader;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pivotal on 18/10/2016.
@@ -26,7 +24,11 @@ public class CFPerfTest {
         append(mainArgs, "PRODUCERS", "x");
 
 
-        PerfTest.main(mainArgs.toArray(new String[mainArgs.size()]));
+        String[] arrayArgs = mainArgs.toArray(new String[mainArgs.size()]);
+
+        System.err.println(Arrays.toString(arrayArgs));
+
+        PerfTest.main(arrayArgs);
 
 
     }
@@ -44,10 +46,11 @@ public class CFPerfTest {
         JSONReader reader = new JSONReader();
         Map<String,Object> vcapMap = (Map<String, Object>) reader.read(vcapServices);
         List<Object> rmq = (List<Object>) vcapMap.get("p-rabbitmq");
-        Map<String,Object> rmqArray = (Map<String,Object>) rmq.get(0);
-        Map<String,Object> creds = (Map<String,Object>) rmqArray.get("credentials");
+        Map<String,Object> rmqSettings = (Map<String,Object>) rmq.get(0);
+        Map<String,Object> creds = (Map<String,Object>) rmqSettings.get("credentials");
         Map<String,Object> protocols = (Map<String,Object>) creds.get("protocols");
-        String amqpURI = (String)protocols.get("uri");
+        Map<String,Object> amqpProtocol = (Map<String,Object>) protocols.get("amqp");
+        String amqpURI = (String)amqpProtocol.get("uri");
 
         return amqpURI;
     }
