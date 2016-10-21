@@ -1,0 +1,425 @@
+---
+director_uuid: 2bae1108-63f4-4cb4-8e64-48400e704301
+instance_groups:
+- azs:
+  - eu-west-1a
+  - eu-west-1b
+  instances: 3
+  jobs:
+  - name: rabbitmq-server
+    release: cf-rabbitmq
+  - name: syslog_forwarder
+    properties:
+      syslog:
+        address: logs4.papertrailapp.com
+        custom_rule: |
+          module(load="imfile")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/rabbit@*.log"
+                Tag="rmq_server")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/rabbit@*-sasl.log"
+                Tag="rmq_server_sasl")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/startup_stderr.log"
+                Tag="rmq_server_startup_stderr")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/startup_stdout.log"
+                Tag="rmq_server_startup_stdout")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/shutdown_stdout.log"
+                Tag="rmq_server_shutdown_stdout")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/shutdown_stderr.log"
+                Tag="rmq_server_shutdown_stderr")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/management-ui/access.log*"
+                Tag="rmq_server_http_api_access")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/upgrade.log"
+                Tag="rmq_server_upgrade")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/init.log"
+                Tag="rmq_server_init")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/node-check.log"
+                Tag="rmq_server_node_check")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-server/cluster-check.log"
+                Tag="rmq_server_cluster_check")
+        port: 31992
+    release: syslog
+  - name: syslog-configuration-test
+    properties:
+      syslog-configuration-test:
+        watched-log-files:
+        - "/var/vcap/sys/log/rabbitmq-server/rabbit@*.log"
+        - "/var/vcap/sys/log/rabbitmq-server/rabbit@*-sasl.log"
+        - "/var/vcap/sys/log/rabbitmq-server/startup_stderr.log"
+        - "/var/vcap/sys/log/rabbitmq-server/startup_stdout.log"
+        - "/var/vcap/sys/log/rabbitmq-server/shutdown_stdout.log"
+        - "/var/vcap/sys/log/rabbitmq-server/shutdown_stderr.log"
+        - "/var/vcap/sys/log/rabbitmq-server/management-ui/access.log*"
+        - "/var/vcap/sys/log/rabbitmq-server/upgrade.log"
+        - "/var/vcap/sys/log/rabbitmq-server/init.log"
+        - "/var/vcap/sys/log/rabbitmq-server/node-check.log"
+        - "/var/vcap/sys/log/rabbitmq-server/cluster-check.log"
+    release: cf-rabbitmq-test
+  - name: metron_agent
+    release: loggregator
+  - name: service-metrics
+    release: service-metrics
+  - name: rabbitmq-server-metrics
+    release: rabbitmq-metrics
+  name: rmq
+  networks:
+  - name: services
+  persistent_disk_type: 10GB
+  properties:
+    service_metrics:
+      execution_interval_seconds: 30
+      metrics_command: "/var/vcap/packages/rabbitmq-server-metrics/bin/rabbitmq-server-metrics"
+      metrics_command_args:
+      - "-erlangBinPath=/var/vcap/packages/erlang/bin/"
+      - "-rabbitmqCtlPath=/var/vcap/packages/rabbitmq-server/bin/rabbitmqctl"
+      - "-logPath=/var/vcap/sys/log/service-metrics/rabbitmq-server-metrics.log"
+      - "-rabbitmqUsername=gw-adm1nstat0R"
+      - "-rabbitmqPassword=R6312VFBTqnFqWq"
+      - "-rabbitmqApiEndpoint=http://127.0.0.1:15672"
+      origin: p-rabbitmq-long-running
+  stemcell: trusty
+  vm_type: r3.large
+- azs:
+  - eu-west-1a
+  instances: 1
+  jobs:
+  - name: rabbitmq-broker
+    release: cf-rabbitmq
+  - name: route_registrar
+    properties:
+      nats:
+        machines:
+        - 10.0.1.109
+        password: Feewiepu6nuF1Ahgh6yeil8j
+        port: 4222
+        user: nats
+      route_registrar:
+        routes:
+        - name: pivotal-rabbitmq-broker-long-running
+          port: 4567
+          registration_interval: 20s
+          uris:
+          - pivotal-rabbitmq-broker-long-running.tarantino.directors.cf-app.com
+    release: routing
+  - name: syslog_forwarder
+    properties:
+      syslog:
+        address: logs4.papertrailapp.com
+        custom_rule: |
+          module(load="imfile")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-broker/startup_stdout.log"
+                Tag="rmq_broker_startup_stdout")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-broker/startup_stderr.log"
+                Tag="rmq_broker_startup_stderr")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/route_registrar/route_registrar.log"
+                Tag="rmq_broker_route_registrar_stdout")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/route_registrar/route_registrar.err.log"
+                Tag="rmq_broker_route_registrar_stderr")
+        port: 31992
+    release: syslog
+  - name: syslog-configuration-test
+    properties:
+      syslog-configuration-test:
+        watched-log-files:
+        - "/var/vcap/sys/log/rabbitmq-broker/startup_stdout.log"
+        - "/var/vcap/sys/log/rabbitmq-broker/startup_stderr.log"
+        - "/var/vcap/sys/log/route_registrar/route_registrar.log"
+        - "/var/vcap/sys/log/route_registrar/route_registrar.err.log"
+    release: cf-rabbitmq-test
+  - name: metron_agent
+    release: loggregator
+  - name: service-metrics
+    release: service-metrics
+  - name: rabbitmq-broker-metrics
+    release: rabbitmq-metrics
+  name: rmq-broker
+  networks:
+  - name: services
+  properties:
+    service_metrics:
+      execution_interval_seconds: 30
+      metrics_command: "/var/vcap/packages/rabbitmq-broker-metrics/heartbeat.sh"
+      metrics_command_args:
+      - p1-rabbit
+      - mFJ7Xx9TAB9LXiG
+      origin: p-rabbitmq-long-running
+  stemcell: trusty
+  vm_type: m3.medium
+- azs:
+  - eu-west-1a
+  - eu-west-1b
+  instances: 2
+  jobs:
+  - name: rabbitmq-haproxy
+    release: cf-rabbitmq
+  - name: route_registrar
+    properties:
+      nats:
+        machines:
+        - 10.0.1.109
+        password: Feewiepu6nuF1Ahgh6yeil8j
+        port: 4222
+        user: nats
+      route_registrar:
+        routes:
+        - name: pivotal-rabbitmq-long-running
+          port: 15672
+          registration_interval: 20s
+          uris:
+          - pivotal-rabbitmq-long-running.tarantino.directors.cf-app.com
+    release: routing
+  - name: syslog_forwarder
+    properties:
+      syslog:
+        address: logs4.papertrailapp.com
+        custom_rule: |
+          # Send messages of all types sent to local2 logging facility to haproxy.log,
+          # "-" in front of the file means to not flush to disk after every write
+          local2.* -/var/vcap/sys/log/rabbitmq-haproxy/haproxy.log
+
+          module(load="imfile")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/rabbitmq-haproxy/haproxy.log"
+                Tag="rmq_haproxy")
+
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/route_registrar/route_registrar.log"
+                Tag="rmq_haproxy_route_registrar_stdout")
+
+          input(type="imfile"
+                File="/var/vcap/sys/log/route_registrar/route_registrar.err.log"
+                Tag="rmq_haproxy_route_registrar_stderr")
+        port: 31992
+    release: syslog
+  - name: syslog-configuration-test
+    properties:
+      syslog-configuration-test:
+        watched-log-files:
+        - "/var/vcap/sys/log/rabbitmq-haproxy/haproxy.log"
+        - "/var/vcap/sys/log/route_registrar/route_registrar.err.log"
+        - "/var/vcap/sys/log/route_registrar/route_registrar.log"
+    release: cf-rabbitmq-test
+  - name: metron_agent
+    release: loggregator
+  - name: service-metrics
+    release: service-metrics
+  - name: rabbitmq-haproxy-metrics
+    release: rabbitmq-metrics
+  name: haproxy
+  networks:
+  - name: services
+  properties:
+    service_metrics:
+      execution_interval_seconds: 30
+      metrics_command: "/var/vcap/packages/rabbitmq-haproxy-metrics/bin/rabbitmq-haproxy-metrics"
+      metrics_command_args:
+      - "-haproxyNetwork=unix"
+      - "-haproxyAddress=/var/vcap/sys/run/rabbitmq-haproxy/haproxy.sock"
+      - "-logPath=/var/vcap/sys/log/service-metrics/rabbitmq-haproxy-metrics.log"
+      origin: p-rabbitmq-long-running
+  stemcell: trusty
+  vm_type: m3.medium
+- azs:
+  - eu-west-1a
+  instances: 1
+  jobs:
+  - name: broker-registrar
+    release: cf-rabbitmq
+  lifecycle: errand
+  name: broker-registrar
+  networks:
+  - name: services
+  stemcell: trusty
+  vm_type: t2.micro
+- azs:
+  - eu-west-1a
+  instances: 1
+  jobs:
+  - name: broker-deregistrar
+    release: cf-rabbitmq
+  lifecycle: errand
+  name: broker-deregistrar
+  networks:
+  - name: services
+  stemcell: trusty
+  vm_type: t2.micro
+- azs:
+  - eu-west-1a
+  instances: 1
+  jobs:
+  - name: smoke-tests
+    release: cf-rabbitmq
+  lifecycle: errand
+  name: smoke-tests
+  networks:
+  - name: services
+  stemcell: trusty
+  vm_type: m3.medium
+meta:
+  broker_routes:
+  - name: pivotal-rabbitmq-broker-long-running
+    port: 4567
+    registration_interval: 20s
+    uris:
+    - pivotal-rabbitmq-broker-long-running.tarantino.directors.cf-app.com
+  haproxy_routes:
+  - name: pivotal-rabbitmq-long-running
+    port: 15672
+    registration_interval: 20s
+    uris:
+    - pivotal-rabbitmq-long-running.tarantino.directors.cf-app.com
+  nats:
+    machines:
+    - 10.0.1.109
+    password: Feewiepu6nuF1Ahgh6yeil8j
+    port: 4222
+    user: nats
+name: cf-rabbitmq-long-running
+properties:
+  broker:
+    host: pivotal-rabbitmq-broker-long-running.tarantino.directors.cf-app.com
+    name: p-rabbitmq-long-running
+    password: mFJ7Xx9TAB9LXiG
+    protocol: https
+    service:
+      name: p-rabbitmq-long-running
+    username: p1-rabbit-long-running
+  cf:
+    admin_password: Feewiepu6nuF1Ahgh6yeil8j
+    admin_username: admin
+    api_url: http://api.tarantino.directors.cf-app.com
+    domain: tarantino.directors.cf-app.com
+  loggregator:
+    etcd:
+      machines:
+      - 10.0.1.110
+  metron_agent:
+    deployment: cf-rabbitmq
+    dropsonde_incoming_port: 3457
+    zone: z1
+  metron_endpoint:
+    shared_secret: raicVesOldIdWyntedquadwyWokFafBi
+  rabbitmq-broker:
+    cc_endpoint: http://api.tarantino.directors.cf-app.com
+    logging:
+      level: debug
+      print_stack_traces: false
+    rabbitmq:
+      administrator:
+        password: R6312VFBTqnFqWq
+        username: broker
+      management_domain: pivotal-rabbitmq-long-running.tarantino.directors.cf-app.com
+      operator_set_policy:
+        enabled: true
+        policy_definition: '{"ha-mode":"exactly","ha-params":2,"ha-sync-mode":"automatic"}'
+        policy_name: operator_set_policy
+        policy_priority: 50
+      ssl: |
+        -----BEGIN CERTIFICATE-----
+        MIIC+zCCAeOgAwIBAgIBAjANBgkqhkiG9w0BAQUFADAnMRUwEwYDVQQDEwxNeVRl
+        c3RSb290Q0ExDjAMBgNVBAcTBTY0MTAzMB4XDTE0MDkwNDA3MjIwOFoXDTI0MDkw
+        MTA3MjIwOFowKjEXMBUGA1UEAxMObWVyY3VyaW8ubG9jYWwxDzANBgNVBAoTBnNl
+        cnZlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANxxSzf958VIm8lp
+        qQ4BHSmz1z8yU/KEKSbuEfIqpGwpVx6TZ+ZYiXa0cMV2pE7UKR4OyJiuvtvv9kzu
+        6g+HTXmJo2cqVonGCAMp6d9TkCAMaMF76IrbLyGmvXQDcjOmWarvsGHW/w6gJpw9
+        svDP9EXyXTBUfaJq3T8+9UQBfMsL4dHwAt79YgvSQLsYiIi2rzQixK/4PHFeHf3G
+        I/UDgjG0YG9iCWp2g1Sc3Z6hYB/0pOCBxE7LCrSGS6/M/7c2569yK7NqSSNN7Lqz
+        ZoQSF1NYE6KRd2MK2A0QaKrn9v8K5/Lp0fk70bvwtLxTWtp3wq3bYQg8UdqY/6R8
+        UATS/aMCAwEAAaMvMC0wCQYDVR0TBAIwADALBgNVHQ8EBAMCBSAwEwYDVR0lBAww
+        CgYIKwYBBQUHAwEwDQYJKoZIhvcNAQEFBQADggEBAHC89mK1HJgDqwxjsGpa3V7t
+        Nuqe/XxEIUUN3Lm4gBLKq4wed4c6z4csv16f3uL9cypyHPSrQmMPV7CDgWLX4F7g
+        YN9PGaVfIp/rGNsDWJEVNU2rfIEDIUfcL+o844jE8CtmzZ4bGVrCHqKW5pAraai1
+        o5h3JaU4yDLo49rqPeRft2n/gj+5E3gi/1TsnuLuzB7kK1gaTTOrV3GASiGokCEN
+        4v1ZjaqMSGMcwA/esaLv2N6UYJgd5lyJ7PEL4ddE8QCTo2EPhYyltLxRqOjrxa+5
+        KONA94PDj14gOSSsoXkoj7gWQsuHT2RXmurYXk4/PkS+k1j0+ZCzKi/ZxF5jt50=
+        -----END CERTIFICATE-----
+    route: pivotal-rabbitmq-broker-long-running
+    service:
+      name: p-rabbitmq-long-running
+      password: mFJ7Xx9TAB9LXiG
+      plan_uuid: a501e432-1f40-4f84-b690-edfed9c8f5ac
+      username: p1-rabbit-long-running
+      uuid: 43a3c900-cdb0-46df-97cb-0b066957e7b0
+  rabbitmq-haproxy:
+    stats:
+      password: iiimxVQGhm36f0y
+      username: admin
+  rabbitmq-server:
+    administrators:
+      broker:
+        password: R6312VFBTqnFqWq
+        username: broker
+      management:
+        password: R6312VFBTqnFqWq
+        username: gw-adm1nstat0R
+    cluster_partition_handling: autoheal
+    cookie: rabbit-cluster:aws
+    plugins:
+    - rabbitmq_management
+    - rabbitmq_mqtt
+    - rabbitmq_stomp
+    ports:
+    - 5672
+    - 5671
+    - 1883
+    - 8883
+    - 61613
+    - 61614
+    - 15672
+    - 15674
+releases:
+- name: cf-rabbitmq
+  version: 224.0.0-dev.28
+- name: cf-rabbitmq-test
+  version: 0.1.0
+- name: routing
+  version: 0.136.0
+- name: syslog
+  version: '7'
+- name: loggregator
+  version: '65'
+- name: service-metrics
+  version: 1.4.3
+- name: rabbitmq-metrics
+  version: 1.29.0
+stemcells:
+- alias: trusty
+  os: ubuntu-trusty
+  version: '3262.12'
+update:
+  canaries: 1
+  canary_watch_time: 30000-180000
+  max_in_flight: 4
+  serial: false
+  update_watch_time: 30000-180000
