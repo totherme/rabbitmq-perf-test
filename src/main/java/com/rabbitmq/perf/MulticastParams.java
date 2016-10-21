@@ -27,7 +27,9 @@ import java.util.List;
 public class MulticastParams {
     private long confirm = -1;
     private int consumerCount = 1;
+    private int channelCountPerConsumerConnection = 1;
     private int producerCount = 1;
+    private int channelCountPerProducerConnection = 1;
     private int consumerTxSize = 0;
     private int producerTxSize = 0;
     private int channelPrefetch = 0;
@@ -82,6 +84,10 @@ public class MulticastParams {
         this.producerCount = producerCount;
     }
 
+    public void setChannelCountPerProducerConnection(int channelCount) { this.channelCountPerProducerConnection = channelCount; }
+
+    public int getChannelCountPerProducerConnection() { return this.channelCountPerProducerConnection; }
+
     public void setConsumerRateLimit(float consumerRateLimit) {
         this.consumerRateLimit = consumerRateLimit;
     }
@@ -89,6 +95,10 @@ public class MulticastParams {
     public void setConsumerCount(int consumerCount) {
         this.consumerCount = consumerCount;
     }
+
+    public void setChannelCountPerConsumerConnection(int channelCount) { this.channelCountPerConsumerConnection = channelCount; }
+
+    public int getChannelCountPerConsumerConnection() { return this.channelCountPerConsumerConnection; }
 
     public void setProducerTxSize(int producerTxSize) {
         this.producerTxSize = producerTxSize;

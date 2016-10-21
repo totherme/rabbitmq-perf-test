@@ -59,7 +59,9 @@ public class PerfTest {
             float producerRateLimit  = floatArg(cmd, 'r', 0.0f);
             float consumerRateLimit  = floatArg(cmd, 'R', 0.0f);
             int producerCount        = intArg(cmd, 'x', 1);
+            int channelCountPerProducer = intArg(cmd, 'w', 1);
             int consumerCount        = intArg(cmd, 'y', 1);
+            int channelCountPerConsumer = intArg(cmd, 'W', 1);
             int producerTxSize       = intArg(cmd, 'm', 0);
             int consumerTxSize       = intArg(cmd, 'n', 0);
             long confirm             = intArg(cmd, 'c', -1);
@@ -98,8 +100,9 @@ public class PerfTest {
             p.setAutoDelete(       true);
             p.setConfirm(          confirm);
             p.setConsumerCount(    consumerCount);
-            p.setConsumerMsgCount( consumerMsgCount);
-            p.setConsumerRateLimit(consumerRateLimit);
+            p.setConsumerMsgCount( consumerMsgCount / channelCountPerConsumer);
+            p.setConsumerRateLimit(consumerRateLimit / channelCountPerConsumer);
+            p.setChannelCountPerConsumerConnection(channelCountPerConsumer);
             p.setConsumerTxSize(   consumerTxSize);
             p.setExchangeName(     exchangeName);
             p.setExchangeType(     exchangeType);
@@ -110,12 +113,13 @@ public class PerfTest {
             p.setConsumerPrefetch( consumerPrefetch);
             p.setChannelPrefetch(  channelPrefetch);
             p.setProducerCount(    producerCount);
-            p.setProducerMsgCount( producerMsgCount);
+            p.setChannelCountPerProducerConnection(channelCountPerProducer);
+            p.setProducerMsgCount( producerMsgCount / channelCountPerProducer);
             p.setProducerTxSize(   producerTxSize);
             p.setQueueNames(        Arrays.asList(queueNames.split(",")));
             p.setRoutingKey(       routingKey);
             p.setRandomRoutingKey( randomRoutingKey);
-            p.setProducerRateLimit(producerRateLimit);
+            p.setProducerRateLimit(producerRateLimit / channelCountPerProducer);
             p.setTimeLimit(        timeLimit);
 
             MulticastSet set = new MulticastSet(stats, factory, p, testID);
@@ -152,7 +156,9 @@ public class PerfTest {
         options.addOption(new Option("r", "rate",             true, "producer rate limit"));
         options.addOption(new Option("R", "consumerRate",     true, "consumer rate limit"));
         options.addOption(new Option("x", "producers",        true, "producer count"));
+        options.addOption(new Option("w", "chproducers",      true, "channel count per producer connection"));
         options.addOption(new Option("y", "consumers",        true, "consumer count"));
+        options.addOption(new Option("W", "chconsumers",      true, "channel count per consumer connection"));
         options.addOption(new Option("m", "ptxsize",          true, "producer tx size"));
         options.addOption(new Option("n", "ctxsize",          true, "consumer tx size"));
         options.addOption(new Option("c", "confirm",          true, "max unconfirmed publishes"));
